@@ -1,45 +1,44 @@
 version: "3"
 
 services:
-  server1:
-    container_name: server1
-    build: .
-    tty: true
+  nginx:
+    image: nginx:1.14.0
+    volumes:
+      - ./webapp/nginx/conf:/etc/nginx
+      - ./webapp/frontend:/www
+    ports:
+      - 127.0.0.1:8000:80
+    networks:
+      - frontend
+  webapp:
+    build: ./webapp/python
     volumes:
       - .:/app
-      - ./mysql:/etc/mysql
     ports:
-      - 3000:80
-      - 33306:3306
+      - 127.0.0.1:8080:80
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=isucon
+      - MYSQL_PASS=isucon
     networks:
-      - app
-  server2:
-    container_name: server2
-    build: .
-    tty: true
+      - frontend
+      - backend
+  db:
+    image: mysql:5.7
     volumes:
-      - .:/app
-      - ./mysql:/etc/mysql
-    ports:
-      - 5000:80
-      - 43306:3306
-    expose:
-      - '3306'
+      - ./webapp/sql:/docker-entrypoint-initdb.d
+      - ./webapp/sql/conf:/etc/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_HOST=127.0.0.01
+      - MYSQL_USER=isucon
+      - MYSQL_PASS=isucon
+      - MYSQL_DATABASE=isuumo
     networks:
-      - app
-  server3:
-    container_name: server3
-    build: .
-    tty: true
-    volumes:
-      - .:/app
-      - ./mysql:/etc/mysql
-    ports:
-      - 8000:80
-      - 53306:3306
-    networks:
-      - app
+      - backend
 
 networks:
-  app:
+  frontend:
+    driver: bridge
+  backend:
     driver: bridge
