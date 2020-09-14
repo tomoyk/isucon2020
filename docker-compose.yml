@@ -7,6 +7,7 @@ services:
     tty: true
     volumes:
       - .:/app
+      - ./mysql:/etc/mysql
     ports:
       - 3000:80
       - 33306:3306
@@ -18,6 +19,7 @@ services:
     tty: true
     volumes:
       - .:/app
+      - ./mysql:/etc/mysql
     ports:
       - 5000:80
       - 43306:3306
@@ -31,6 +33,7 @@ services:
     tty: true
     volumes:
       - .:/app
+      - ./mysql:/etc/mysql
     ports:
       - 8000:80
       - 53306:3306

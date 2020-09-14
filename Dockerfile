@@ -1,7 +1,8 @@
 FROM ubuntu:18.04
 
 WORKDIR /app
-ADD requirements.txt /app
+ADD app/requirements.txt /tmp
+ADD mysql/* /etc/
 
 RUN apt-get update && apt-get install -y \
 	mysql-server \
@@ -18,8 +19,12 @@ RUN echo "deb-src http://nginx.org/packages/ubuntu/ bionic nginx" >> /etc/apt/so
 
 RUN apt-get update && apt-get install nginx
 
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
+
+
+RUN usermod -d /var/lib/mysql mysql
 RUN service mysql start && mysql -uroot -e "create user 'isucon'@'localhost' identified by 'isucon';"
+RUN service mysql start && mysql -uroot -e "grant all privileges on *.* to 'isucon'@'%' identified by 'isucon' with grant option;"
 
 RUN service nginx start
 
