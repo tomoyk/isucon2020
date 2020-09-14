@@ -14,8 +14,8 @@ services:
     build: ./webapp/python
     volumes:
       - .:/app
-    ports:
-      - 127.0.0.1:8080:80
+    expose:
+      - 1323
     environment:
       - MYSQL_HOST=db
       - MYSQL_USER=isucon
@@ -26,13 +26,13 @@ services:
   db:
     image: mysql:5.7
     volumes:
-      - ./webapp/sql:/docker-entrypoint-initdb.d
-      - ./webapp/sql/conf:/etc/mysql
+      - ./webapp/mysql:/docker-entrypoint-initdb.d
+      - ./webapp/mysql/conf:/etc/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=secret
       - MYSQL_HOST=127.0.0.01
       - MYSQL_USER=isucon
-      - MYSQL_PASS=isucon
+      - MYSQL_PASSWORD=isucon
       - MYSQL_DATABASE=isuumo
     networks:
       - backend
