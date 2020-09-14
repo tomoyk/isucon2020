@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  server1:
+    container_name: server1
+    build: .
+    tty: true
+    volumes:
+      - .:/app
+    ports:
+      - 3000:80
+      - 33306:3306
+    networks:
+      - app
+  server2:
+    container_name: server2
+    build: .
+    tty: true
+    volumes:
+      - .:/app
+    ports:
+      - 5000:80
+      - 43306:3306
+    expose:
+      - '3306'
+    networks:
+      - app
+  server3:
+    container_name: server3
+    build: .
+    tty: true
+    volumes:
+      - .:/app
+    ports:
+      - 8000:80
+      - 53306:3306
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
