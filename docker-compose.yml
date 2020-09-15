@@ -13,7 +13,8 @@ services:
   webapp:
     build: ./webapp/python
     volumes:
-      - .:/app
+      - ./webapp/mysql:/app/webapp/mysql
+      - ./webapp/fixture:/app/webapp/fixture
     expose:
       - 1323
     environment:
