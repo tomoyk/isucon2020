@@ -2,7 +2,6 @@ FROM python:3.8.5
 
 WORKDIR /app/webapp/python/
 ADD requirements.txt /tmp/
-ADD app.py /app/webapp/python/
 
 RUN apt-get update && \
     apt-get install -y mariadb-client &&  \
