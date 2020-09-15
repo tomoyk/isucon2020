@@ -1,6 +1,5 @@
 from os import getenv, path
 import json
-import re
 import subprocess
 from io import StringIO
 import csv
@@ -52,28 +51,11 @@ def post_initialize():
         "1_DummyEstateData.sql",
         "2_DummyChairData.sql",
     ]
-    statement = ""
-
-    cnx = cnxpool.connect()
 
     for sql_file in sql_files:
-#        command = f"mysql -h {mysql_connection_env['host']} -u {mysql_connection_env['user']} -p{mysql_connection_env['password']} -P {mysql_connection_env['port']} {mysql_connection_env['database']} < {path.join(sql_dir, sql_file)}"
-#        subprocess.run(["bash", "-c", command])
-        cursor = cnx.cursor(dictionary=True)
-        with open(sql_dir+"/"+sql_file,"r") as f:
-            for line in f: 
-                if re.match(r'--', line): # ignore sql comment lines 
-                    continue 
-                if not re.search(r'[^-;]+;', line): # keep appending lines that don't end in ';' 
-                    statement = statement + line 
-                else: # when you get a line ending in ';' then exec statement and reset for next statement 
-                    statement = statement + line 
-                #print "\n\n[DEBUG] Executing SQL statement:\n%s" % (statement) 
-                #try: 
-                cursor.execute(statement) 
-                #except (Exception) as e:#(OperationalError, ProgrammingError) as e: 
-                #    print("\n[WARN] MySQLError during execute statement \n\tArgs: '%s'" % (str(e.args)))
-    cnx.close()
+        command = f"mysql -h {mysql_connection_env['host']} -u {mysql_connection_env['user']} -p{mysql_connection_env['password']} -P {mysql_connection_env['port']} {mysql_connection_env['database']} < {path.join(sql_dir, sql_file)}"
+        subprocess.run(["bash", "-c", command])
+
     return {"language": "python"}
 
 
