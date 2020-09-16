@@ -26,10 +26,9 @@ services:
       - frontend
       - backend
   db:
-    image: mysql:5.7
+    build: ./webapp/mysql
     volumes:
       - ./webapp/mysql/db:/docker-entrypoint-initdb.d
-      - ./webapp/mysql/conf:/etc/mysql
     ports:
       - 127.0.0.1:3306:3306
     environment:
