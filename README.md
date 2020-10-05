@@ -21,3 +21,11 @@ curl http://localhost:8000/
 ```
 curl -XPOST http://localhost:8000/initialize
 ```
+
+4. Use kataribe
+
+```
+go get -u github.com/matsuu/kataribe
+
+cat logs/access.log | kataribe
+```
