@@ -191,7 +191,7 @@ def get_chair_search_condition():
 
 @app.route("/api/chair/<int:chair_id>", methods=["GET"])
 def get_chair(chair_id):
-    chair = select_row("SELECT * FROM chair WHERE id = %s", (chair_id,))
+    chair = select_row2("SELECT * FROM chair WHERE id = %s", (chair_id,))
     if chair is None or chair["stock"] <= 0:
         raise NotFound()
     return camelize(chair)
@@ -302,7 +302,7 @@ def get_estate_search_condition():
 
 @app.route("/api/estate/req_doc/<int:estate_id>", methods=["POST"])
 def post_estate_req_doc(estate_id):
-    estate = select_row("SELECT * FROM estate WHERE id = %s", (estate_id,))
+    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
     if estate is None:
         raise NotFound()
     return {"ok": True}
@@ -365,7 +365,7 @@ def get_estate(estate_id):
 
 @app.route("/api/recommended_estate/<int:chair_id>", methods=["GET"])
 def get_recommended_estate(chair_id):
-    chair = select_row("SELECT * FROM chair WHERE id = %s", (chair_id,))
+    chair = select_row2("SELECT * FROM chair WHERE id = %s", (chair_id,))
     if chair is None:
         raise BadRequest(f"Invalid format searchRecommendedEstateWithChair id : {chair_id}")
     w, h, d = chair["width"], chair["height"], chair["depth"]
