@@ -43,6 +43,17 @@ def select_row(*args, **kwargs):
     return rows[0] if len(rows) > 0 else None
 
 
+def select_row2(*args, **kwargs):
+    cnx = cnxpool.connect()
+    try:
+        cur = cnx.cursor(dictionary=True)
+        cur.execute(*args, **kwargs)
+        row = cur.fetchone()
+    finally:
+        cnx.close()
+    return row if row else None
+
+
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
     sql_dir = "../mysql/db"
@@ -346,7 +357,7 @@ def post_estate_nazotte():
 
 @app.route("/api/estate/<int:estate_id>", methods=["GET"])
 def get_estate(estate_id):
-    estate = select_row("SELECT * FROM estate WHERE id = %s", (estate_id,))
+    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
     if estate is None:
         raise NotFound()
     return camelize(estate)
