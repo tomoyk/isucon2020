@@ -378,13 +378,13 @@ def post_chair():
     if "chairs" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["chairs"].read().decode()))
+    records = [rec for rec in records]
     cnx = cnxpool.connect()
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
-        for record in records:
-            query = "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            cur.execute(query, record)
+        query = "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        cur.executemany(query, records)
         cnx.commit()
         return {"ok": True}, 201
     except Exception as e:
@@ -399,13 +399,13 @@ def post_estate():
     if "estates" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["estates"].read().decode()))
+    records = [rec for rec in records]
     cnx = cnxpool.connect()
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
-        for record in records:
-            query = "INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            cur.execute(query, record)
+        query = "INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        cur.executemany(query, records)
         cnx.commit()
         return {"ok": True}, 201
     except Exception as e:
