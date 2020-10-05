@@ -175,7 +175,7 @@ def get_chair_search():
 
     search_condition = " AND ".join(conditions)
 
-    query = f"SELECT COUNT(*) as count FROM chair WHERE {search_condition}"
+    query = f"SELECT COUNT(id) as count FROM chair WHERE {search_condition}"
     count = select_row(query, params)["count"]
 
     query = f"SELECT * FROM chair WHERE {search_condition} ORDER BY popularity DESC, id ASC LIMIT %s OFFSET %s"
