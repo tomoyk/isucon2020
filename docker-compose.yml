@@ -6,6 +6,7 @@ services:
     volumes:
       - ./webapp/nginx/conf:/etc/nginx
       - ./webapp/frontend:/www
+      - ./logs:/var/log/nginx
     ports:
       - 127.0.0.1:8000:80
     networks:
@@ -26,9 +27,11 @@ services:
       - frontend
       - backend
   db:
-    build: ./webapp/mysql
+    image: mysql:5.7
+    # build: ./webapp/mysql
     volumes:
       - ./webapp/mysql/db:/docker-entrypoint-initdb.d
+      - ./webapp/mysql/conf:/etc/mysql
     ports:
       - 127.0.0.1:3306:3306
     environment:

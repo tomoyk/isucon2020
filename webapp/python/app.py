@@ -43,6 +43,17 @@ def select_row(*args, **kwargs):
     return rows[0] if len(rows) > 0 else None
 
 
+def select_row2(*args, **kwargs):
+    cnx = cnxpool.connect()
+    try:
+        cur = cnx.cursor(dictionary=True)
+        cur.execute(*args, **kwargs)
+        row = cur.fetchone()
+    finally:
+        cnx.close()
+    return row if row else None
+
+
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
     sql_dir = "../mysql/db"
@@ -180,7 +191,7 @@ def get_chair_search_condition():
 
 @app.route("/api/chair/<int:chair_id>", methods=["GET"])
 def get_chair(chair_id):
-    chair = select_row("SELECT * FROM chair WHERE id = %s", (chair_id,))
+    chair = select_row2("SELECT * FROM chair WHERE id = %s", (chair_id,))
     if chair is None or chair["stock"] <= 0:
         raise NotFound()
     return camelize(chair)
@@ -291,7 +302,7 @@ def get_estate_search_condition():
 
 @app.route("/api/estate/req_doc/<int:estate_id>", methods=["POST"])
 def post_estate_req_doc(estate_id):
-    estate = select_row("SELECT * FROM estate WHERE id = %s", (estate_id,))
+    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
     if estate is None:
         raise NotFound()
     return {"ok": True}
@@ -313,46 +324,40 @@ def post_estate_nazotte():
 
     cnx = cnxpool.connect()
     try:
+        polygon_text = (
+            f"POLYGON(({','.join(['{} {}'.format(c['latitude'], c['longitude']) for c in coordinates])}))"
+        )
+        # print(polygon_text)
         cur = cnx.cursor(dictionary=True)
         cur.execute(
             (
                 "SELECT * FROM estate"
                 " WHERE latitude <= %s AND latitude >= %s AND longitude <= %s AND longitude >= %s"
+                " AND ST_Contains(ST_PolygonFromText(%s), POINT(latitude, longitude)) "
                 " ORDER BY popularity DESC, id ASC"
+                " LIMIT %s"
             ),
             (
                 bounding_box["bottom_right_corner"]["latitude"],
                 bounding_box["top_left_corner"]["latitude"],
                 bounding_box["bottom_right_corner"]["longitude"],
                 bounding_box["top_left_corner"]["longitude"],
+                polygon_text,
+                NAZOTTE_LIMIT,
             ),
         )
         estates = cur.fetchall()
-        estates_in_polygon = []
-        for estate in estates:
-            query = "SELECT * FROM estate WHERE id = %s AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))"
-            polygon_text = (
-                f"POLYGON(({','.join(['{} {}'.format(c['latitude'], c['longitude']) for c in coordinates])}))"
-            )
-            geom_text = f"POINT({estate['latitude']} {estate['longitude']})"
-            cur.execute(query, (estate["id"], polygon_text, geom_text))
-            if len(cur.fetchall()) > 0:
-                estates_in_polygon.append(estate)
     finally:
         cnx.close()
 
-    results = {"estates": []}
-    for i, estate in enumerate(estates_in_polygon):
-        if i >= NAZOTTE_LIMIT:
-            break
-        results["estates"].append(camelize(estate))
+    results = {"estates": [camelize(estate) for estate in estates]}
     results["count"] = len(results["estates"])
     return results
 
 
 @app.route("/api/estate/<int:estate_id>", methods=["GET"])
 def get_estate(estate_id):
-    estate = select_row("SELECT * FROM estate WHERE id = %s", (estate_id,))
+    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
     if estate is None:
         raise NotFound()
     return camelize(estate)
@@ -360,7 +365,7 @@ def get_estate(estate_id):
 
 @app.route("/api/recommended_estate/<int:chair_id>", methods=["GET"])
 def get_recommended_estate(chair_id):
-    chair = select_row("SELECT * FROM chair WHERE id = %s", (chair_id,))
+    chair = select_row2("SELECT * FROM chair WHERE id = %s", (chair_id,))
     if chair is None:
         raise BadRequest(f"Invalid format searchRecommendedEstateWithChair id : {chair_id}")
     w, h, d = chair["width"], chair["height"], chair["depth"]
@@ -384,13 +389,13 @@ def post_chair():
     if "chairs" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["chairs"].read().decode()))
+    records = [rec for rec in records]
     cnx = cnxpool.connect()
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
-        for record in records:
-            query = "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            cur.execute(query, record)
+        query = "INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        cur.executemany(query, records)
         cnx.commit()
         return {"ok": True}, 201
     except Exception as e:
@@ -405,13 +410,13 @@ def post_estate():
     if "estates" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["estates"].read().decode()))
+    records = [rec for rec in records]
     cnx = cnxpool.connect()
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
-        for record in records:
-            query = "INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            cur.execute(query, record)
+        query = "INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        cur.executemany(query, records)
         cnx.commit()
         return {"ok": True}, 201
     except Exception as e:
