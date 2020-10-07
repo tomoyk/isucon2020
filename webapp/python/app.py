@@ -232,7 +232,7 @@ def get_estate_search():
         else:
             raise BadRequest("doorHeightRangeId invalid")
         if door_height["min"] != -1:
-            conditions.append("door_height >= %s")
+            conditions.append("%s <= door_height")
             params.append(door_height["min"])
         if door_height["max"] != -1:
             conditions.append("door_height < %s")
@@ -246,7 +246,7 @@ def get_estate_search():
         else:
             raise BadRequest("doorWidthRangeId invalid")
         if door_width["min"] != -1:
-            conditions.append("door_width >= %s")
+            conditions.append("%s <= door_width")
             params.append(door_width["min"])
         if door_width["max"] != -1:
             conditions.append("door_width < %s")
@@ -260,7 +260,7 @@ def get_estate_search():
         else:
             raise BadRequest("rentRangeId invalid")
         if rent["min"] != -1:
-            conditions.append("rent >= %s")
+            conditions.append("%s <= rent")
             params.append(rent["min"])
         if rent["max"] != -1:
             conditions.append("rent < %s")
@@ -286,7 +286,7 @@ def get_estate_search():
 
     search_condition = " AND ".join(conditions)
 
-    query = f"SELECT COUNT(*) as count FROM estate WHERE {search_condition}"
+    query = f"SELECT COUNT(id) as count FROM estate WHERE {search_condition}"
     count = select_row(query, params)["count"]
 
     query = f"SELECT * FROM estate WHERE {search_condition} ORDER BY popularity DESC, id ASC LIMIT %s OFFSET %s"
