@@ -72,13 +72,13 @@ def post_initialize():
 
 @app.route("/api/estate/low_priced", methods=["GET"])
 def get_estate_low_priced():
-    rows = select_all("SELECT * FROM estate ORDER BY rent ASC, id ASC LIMIT %s", (LIMIT,))
-    return {"estates": camelize(rows)}
+    rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
+    return {"estates": camelize (rows)}
 
 
 @app.route("/api/chair/low_priced", methods=["GET"])
 def get_chair_low_priced():
-    rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT %s", (LIMIT,))
+    rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
     return {"chairs": camelize(rows)}
 
 
