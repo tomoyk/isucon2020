@@ -47,15 +47,21 @@ cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_en
 cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=10)
 
 IS_LOCAL_DEV = True
-
+DEBUG_MYLOG = True
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
     if ' estate' in query and not IS_LOCAL_DEV:
+        if DEBUG_MYLOG:
+            app.logger.info("estate")
         cnx = cnxpool_estate.connect()
     elif ' chair' in query and not IS_LOCAL_DEV:
+        if DEBUG_MYLOG:
+            app.logger.info("chair")
         cnx = cnxpool_chair.connect()
     else:
+        if DEBUG_MYLOG:
+            app.logger.info("other")
         cnx = cnxpool.connect()
 
     try:
@@ -74,10 +80,16 @@ def select_row(*args, **kwargs):
 def select_row2(*args, **kwargs):
     # print(args[0])
     if ' estate' in args[0] and not IS_LOCAL_DEV:
+        if DEBUG_MYLOG:
+            app.logger.info("estate")
         cnx = cnxpool_estate.connect()
     elif ' chair' in args[0] and not IS_LOCAL_DEV:
+        if DEBUG_MYLOG:
+            app.logger.info("chair")
         cnx = cnxpool_chair.connect()
     else:
+        if DEBUG_MYLOG:
+            app.logger.info("other")
         cnx = cnxpool.connect()
 
     try:
@@ -244,7 +256,11 @@ def get_chair(chair_id):
 
 @app.route("/api/chair/buy/<int:chair_id>", methods=["POST"])
 def post_chair_buy(chair_id):
-    cnx = cnxpool_chair.connect()
+    if IS_LOCAL_DEV:
+        cnx = cnxpool.connect()
+    else:
+        cnx = cnxpool_chair.connect()
+
     try:
         cnx.start_transaction()
         cur = cnx.cursor(dictionary=True)
@@ -367,7 +383,11 @@ def post_estate_nazotte():
         "bottom_right_corner": {"longitude": max(longitudes), "latitude": max(latitudes)},
     }
 
-    cnx = cnxpool_estate.connect()
+    if IS_LOCAL_DEV:
+        cnx = cnxpool.connect()
+    else:
+        cnx = cnxpool_estate.connect()
+
     try:
         polygon_text = (
             f"POLYGON(({','.join(['{} {}'.format(c['latitude'], c['longitude']) for c in coordinates])}))"
@@ -435,7 +455,12 @@ def post_chair():
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["chairs"].read().decode()))
     records = [rec for rec in records]
-    cnx = cnxpool_chair.connect()
+
+    if IS_LOCAL_DEV:
+        cnx = cnxpool.connect()
+    else:
+        cnx = cnxpool_chair.connect()
+
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
@@ -456,7 +481,12 @@ def post_estate():
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["estates"].read().decode()))
     records = [rec for rec in records]
-    cnx = cnxpool_estate.connect()
+
+    if IS_LOCAL_DEV:
+        cnx = cnxpool.connect()
+    else:
+        cnx = cnxpool_estate.connect()
+
     try:
         cnx.start_transaction()
         cur = cnx.cursor()
