@@ -25,14 +25,6 @@ mysql_connection_env = {
     "database": getenv("MYSQL_DBNAME", "isuumo"),
 }
 
-mysql_connection_env1 = {
-    "host": "comp1",
-    "port": 3306,
-    "user": "isucon",
-    "password": "isucon",
-    "database": "isuumo",
-}
-
 mysql_connection_env2 = {
     "host": "comp2",
     "port": 3306,
@@ -41,10 +33,18 @@ mysql_connection_env2 = {
     "database": "isuumo",
 }
 
+mysql_connection_env3 = {
+    "host": "comp3",
+    "port": 3306,
+    "user": "isucon",
+    "password": "isucon",
+    "database": "isuumo",
+}
+
 cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env), pool_size=10)
 
-cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env1), pool_size=10)
-cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=10)
+cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=10)
+cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=10)
 
 IS_LOCAL_DEV = True
 
@@ -103,11 +103,11 @@ def post_initialize():
             command = f"mysql -h {mysql_connection_env['host']} -u {mysql_connection_env['user']} -p{mysql_connection_env['password']} -P {mysql_connection_env['port']} {mysql_connection_env['database']} < {path.join(sql_dir, sql_file)}"
             subprocess.run(["bash", "-c", command])
     else:
-        for node in ('comp1', 'comp2'):
+        for node in ('comp2', 'comp3'):
             for sql_file in sql_files:
-                if node == 'comp1' and sql_file == '1_DummyEstateData.sql':
+                if node == 'comp2' and sql_file == '1_DummyEstateData.sql':
                     continue
-                elif node == 'comp2' and sql_file == '2_DummyChairData.sql':
+                elif node == 'comp3' and sql_file == '2_DummyChairData.sql':
                     continue
                 command = f"mysql -h {node} -u isucon -pisucon -P 3306 isuumo < {path.join(sql_dir, sql_file)}"
                 subprocess.run(["bash", "-c", command])
