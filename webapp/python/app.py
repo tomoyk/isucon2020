@@ -51,9 +51,9 @@ IS_LOCAL_DEV = False
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
-    if 'FROM estate' in query and IS_LOCAL_DEV:
+    if ' estate' in query and IS_LOCAL_DEV:
         cnx = cnxpool_estate.connect()
-    elif 'FROM chair' in query and IS_LOCAL_DEV:
+    elif 'chair' in query and IS_LOCAL_DEV:
         cnx = cnxpool_chair.connect()
     else:
         cnx = cnxpool.connect()
@@ -73,9 +73,9 @@ def select_row(*args, **kwargs):
 
 def select_row2(*args, **kwargs):
     # print(args[0])
-    if 'FROM estate' in args[0] and IS_LOCAL_DEV:
+    if ' estate' in args[0] and IS_LOCAL_DEV:
         cnx = cnxpool_estate.connect()
-    elif 'FROM chair' in args[0] and IS_LOCAL_DEV:
+    elif ' chair' in args[0] and IS_LOCAL_DEV:
         cnx = cnxpool_chair.connect()
     else:
         cnx = cnxpool.connect()
@@ -105,7 +105,7 @@ def post_initialize():
     else:
         for node in ('comp1', 'comp2'):
             for sql_file in sql_files:
-                command = f"mysql -h {node} -u isuumo -pisuumo -P 3306 isuumo < {path.join(sql_dir, sql_file)}"
+                command = f"mysql -h {node} -u isucon -pisucon -P 3306 isuumo < {path.join(sql_dir, sql_file)}"
                 subprocess.run(["bash", "-c", command])
 
     return {"language": "python"}
