@@ -53,7 +53,7 @@ def select_all(query, *args, dictionary=True):
     # print(args[0])
     if ' estate' in query and IS_LOCAL_DEV:
         cnx = cnxpool_estate.connect()
-    elif 'chair' in query and IS_LOCAL_DEV:
+    elif ' chair' in query and IS_LOCAL_DEV:
         cnx = cnxpool_chair.connect()
     else:
         cnx = cnxpool.connect()
