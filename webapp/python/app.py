@@ -46,14 +46,14 @@ cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env), poo
 cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env1), pool_size=10)
 cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=10)
 
-IS_LOCAL_DEV = False
+IS_LOCAL_DEV = True
 
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
-    if ' estate' in query and IS_LOCAL_DEV:
+    if ' estate' in query and not IS_LOCAL_DEV:
         cnx = cnxpool_estate.connect()
-    elif ' chair' in query and IS_LOCAL_DEV:
+    elif ' chair' in query and not IS_LOCAL_DEV:
         cnx = cnxpool_chair.connect()
     else:
         cnx = cnxpool.connect()
@@ -73,9 +73,9 @@ def select_row(*args, **kwargs):
 
 def select_row2(*args, **kwargs):
     # print(args[0])
-    if ' estate' in args[0] and IS_LOCAL_DEV:
+    if ' estate' in args[0] and not IS_LOCAL_DEV:
         cnx = cnxpool_estate.connect()
-    elif ' chair' in args[0] and IS_LOCAL_DEV:
+    elif ' chair' in args[0] and not IS_LOCAL_DEV:
         cnx = cnxpool_chair.connect()
     else:
         cnx = cnxpool.connect()
@@ -105,6 +105,10 @@ def post_initialize():
     else:
         for node in ('comp1', 'comp2'):
             for sql_file in sql_files:
+                if node == 'comp1' and sql_file == '1_DummyEstateData.sql':
+                    continue
+                elif node == 'comp2' and sql_file == '2_DummyChairData.sql':
+                    continue
                 command = f"mysql -h {node} -u isucon -pisucon -P 3306 isuumo < {path.join(sql_dir, sql_file)}"
                 subprocess.run(["bash", "-c", command])
 
