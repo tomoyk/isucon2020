@@ -51,19 +51,20 @@ DEBUG_MYLOG = True
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
-    if ' estate' in query and not IS_LOCAL_DEV:
-        if DEBUG_MYLOG:
-            app.logger.info("estate")
-        cnx = cnxpool_estate.connect()
-    elif ' chair' in query and not IS_LOCAL_DEV:
-        if DEBUG_MYLOG:
-            app.logger.info("chair")
-        cnx = cnxpool_chair.connect()
-    else:
+    if IS_LOCAL_DEV:
         if DEBUG_MYLOG:
             app.logger.info("other")
         cnx = cnxpool.connect()
-
+    else:
+        if ' estate' in query:
+            if DEBUG_MYLOG:
+                app.logger.info("estate")
+            cnx = cnxpool_estate.connect()
+        elif ' chair' in query:
+            if DEBUG_MYLOG:
+                app.logger.info("chair")
+            cnx = cnxpool_chair.connect()
+        
     try:
         cur = cnx.cursor(dictionary=dictionary)
         cur.execute(query, *args)
@@ -117,10 +118,12 @@ def post_initialize():
     else:
         for node in ('comp2', 'comp3'):
             for sql_file in sql_files:
+                '''
                 if node == 'comp2' and sql_file == '1_DummyEstateData.sql':
                     continue
                 elif node == 'comp3' and sql_file == '2_DummyChairData.sql':
                     continue
+                '''
                 command = f"mysql -h {node} -u isucon -pisucon -P 3306 isuumo < {path.join(sql_dir, sql_file)}"
                 subprocess.run(["bash", "-c", command])
 
