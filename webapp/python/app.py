@@ -43,8 +43,8 @@ mysql_connection_env3 = {
 
 cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env), pool_size=10)
 
-cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=10)
-cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=10)
+cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=20)
+cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=20)
 
 IS_LOCAL_DEV = True
 DEBUG_MYLOG = True
