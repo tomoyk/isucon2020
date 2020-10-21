@@ -9,6 +9,10 @@ import mysql.connector
 from sqlalchemy.pool import QueuePool
 from humps import camelize
 
+import json
+import redis
+r = redis.Redis(host='localhost', port=6379, decode_responses=True, db=0)
+
 LIMIT = 20
 NAZOTTE_LIMIT = 50
 
@@ -26,7 +30,7 @@ mysql_connection_env = {
 }
 
 mysql_connection_env2 = {
-    "host": "comp2",
+    "host": "192.168.0.82",
     "port": 3306,
     "user": "isucon",
     "password": "isucon",
@@ -34,7 +38,7 @@ mysql_connection_env2 = {
 }
 
 mysql_connection_env3 = {
-    "host": "comp3",
+    "host": "192.168.0.83",
     "port": 3306,
     "user": "isucon",
     "password": "isucon",
@@ -43,11 +47,11 @@ mysql_connection_env3 = {
 
 cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env), pool_size=10)
 
-cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=10)
-cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=10)
+cnxpool_estate = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env2), pool_size=20)
+cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env3), pool_size=20)
 
-IS_LOCAL_DEV = True
-DEBUG_MYLOG = True
+IS_LOCAL_DEV = False
+DEBUG_MYLOG = False
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
@@ -104,6 +108,9 @@ def select_row2(*args, **kwargs):
 
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
+    r.delete('estate_low_priced')
+    r.delete('chair_low_priced')
+
     sql_dir = "../mysql/db"
     sql_files = [
         "0_Schema.sql",
@@ -116,7 +123,7 @@ def post_initialize():
             command = f"mysql -h {mysql_connection_env['host']} -u {mysql_connection_env['user']} -p{mysql_connection_env['password']} -P {mysql_connection_env['port']} {mysql_connection_env['database']} < {path.join(sql_dir, sql_file)}"
             subprocess.run(["bash", "-c", command])
     else:
-        for node in ('comp2', 'comp3'):
+        for node in ('192.168.0.83', '192.168.0.82'):
             for sql_file in sql_files:
                 '''
                 if node == 'comp2' and sql_file == '1_DummyEstateData.sql':
@@ -132,13 +139,26 @@ def post_initialize():
 
 @app.route("/api/estate/low_priced", methods=["GET"])
 def get_estate_low_priced():
-    rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
+    rows = r.get('estate_low_priced')
+    if rows is None:
+        rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
+        r.set('estate_low_priced', json.dumps(rows))
+    else:
+        rows = json.loads(rows)
+    # rows = camelize(select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,)))
+
     return {"estates": camelize(rows)}
 
 
 @app.route("/api/chair/low_priced", methods=["GET"])
 def get_chair_low_priced():
-    rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
+    rows = r.get('chair_low_priced')
+    if rows is None:
+        rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
+        r.set('chair_low_priced', json.dumps(rows))
+    else:
+        rows = json.loads(rows)
+    # rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
     return {"chairs": camelize(rows)}
 
 
@@ -437,6 +457,7 @@ def get_recommended_estate(chair_id):
     if chair is None:
         raise BadRequest(f"Invalid format searchRecommendedEstateWithChair id : {chair_id}")
     w, h, d = chair["width"], chair["height"], chair["depth"]
+    '''
     query = (
         "SELECT * FROM estate"
         " WHERE (door_width >= %s AND door_height >= %s)"
@@ -448,12 +469,23 @@ def get_recommended_estate(chair_id):
         " ORDER BY popularity DESC, id ASC"
         " LIMIT %s"
     )
-    estates = select_all(query, (w, h, w, d, h, w, h, d, d, w, d, h, LIMIT))
+    '''
+    query = (
+        "SELECT * FROM estate"
+        " WHERE (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
+        "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
+        "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
+        " ORDER BY popularity DESC, id ASC"
+        " LIMIT %s"
+    )
+    estates = select_all(query, (w, h, d, h, w, d, d, w, h, LIMIT))
     return {"estates": camelize(estates)}
 
 
 @app.route("/api/chair", methods=["POST"])
 def post_chair():
+    r.delete('chair_low_priced')
+
     if "chairs" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["chairs"].read().decode()))
@@ -480,6 +512,8 @@ def post_chair():
 
 @app.route("/api/estate", methods=["POST"])
 def post_estate():
+    r.delete('estate_low_priced')
+
     if "estates" not in flask.request.files:
         raise BadRequest()
     records = csv.reader(StringIO(flask.request.files["estates"].read().decode()))
