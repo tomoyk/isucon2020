@@ -30,8 +30,9 @@ PIDFile=/home/isucon/isuumo/webapp/python/server.pid
 
 User=isucon
 Group=isucon
-ExecStart=/home/isucon/local/python/bin/uwsgi -w app:app --master --processes 4 --pidfile /home/isucon/isuumo/webapp/python/server.pid --socket /tmp/uwsgi.sock --chmod-socket=666 --enable-threads --disable-logging
+ExecStart=/home/isucon/local/python/bin/newrelic-admin run-program /home/isucon/local/python/bin/uwsgi -w app:app --master --processes 16 --pidfile /home/isucon/isuumo/webapp/python/server.pid --socket /tmp/uwsgi.sock --chmod-socket=666 --enable-threads --disable-logging --single-interpreter
 ExecStop=/bin/bash -c "kill -QUIT $(cat /home/isucon/isuumo/webapp/python/server.pid)"
+Environment=NEW_RELIC_CONFIG_FILE=/home/isucon/newrelic.ini
 
 Restart   = always
 Type      = simple
