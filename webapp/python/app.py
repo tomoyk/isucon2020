@@ -258,7 +258,7 @@ def get_chair_search():
     query = f"SELECT COUNT(id) as count FROM chair WHERE {search_condition}"
     count = select_row(query, params)["count"]
 
-    query = f"SELECT * FROM chair WHERE {search_condition} ORDER BY popularity DESC, id ASC LIMIT %s OFFSET %s"
+    query = f"SELECT * FROM chair WHERE {search_condition} ORDER BY popularity DESC, id LIMIT %s OFFSET %s"
     chairs = select_all(query, params + [per_page, per_page * page])
 
     return {"count": count, "chairs": camelize(chairs)}
@@ -373,8 +373,9 @@ def get_estate_search():
     query = f"SELECT COUNT(id) as count FROM estate WHERE {search_condition}"
     count = select_row(query, params)["count"]
 
-    query = f"SELECT * FROM estate WHERE {search_condition} ORDER BY popularity DESC, id ASC LIMIT %s OFFSET %s"
+    query = f"SELECT * FROM estate WHERE {search_condition} ORDER BY popularity_desc, id LIMIT %s OFFSET %s"
     chairs = select_all(query, params + [per_page, per_page * page])
+    # app.logger.info(query)
 
     return {"count": count, "estates": camelize(chairs)}
 
@@ -422,7 +423,7 @@ def post_estate_nazotte():
                 "SELECT * FROM estate"
                 " WHERE latitude <= %s AND latitude >= %s AND longitude <= %s AND longitude >= %s"
                 " AND ST_Contains(ST_PolygonFromText(%s), POINT(latitude, longitude)) "
-                " ORDER BY popularity DESC, id ASC"
+                " ORDER BY popularity_desc, id"
                 " LIMIT %s"
             ),
             (
@@ -466,7 +467,7 @@ def get_recommended_estate(chair_id):
         "    OR (door_width >= %s AND door_height >= %s)"
         "    OR (door_width >= %s AND door_height >= %s)"
         "    OR (door_width >= %s AND door_height >= %s)"
-        " ORDER BY popularity DESC, id ASC"
+        " ORDER BY popularity_desc, id"
         " LIMIT %s"
     )
     '''
@@ -475,7 +476,7 @@ def get_recommended_estate(chair_id):
         " WHERE (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
         "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
         "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
-        " ORDER BY popularity DESC, id ASC"
+        " ORDER BY popularity_desc, id ASC"
         " LIMIT %s"
     )
     estates = select_all(query, (w, h, d, h, w, d, d, w, h, LIMIT))
