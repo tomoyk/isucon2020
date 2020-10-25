@@ -108,8 +108,7 @@ def select_row2(*args, **kwargs):
 
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
-    r.delete('estate_low_priced')
-    r.delete('chair_low_priced')
+    r.flushall()
 
     sql_dir = "../mysql/db"
     sql_files = [
@@ -287,11 +286,10 @@ def post_chair_buy(chair_id):
     try:
         cnx.start_transaction()
         cur = cnx.cursor(dictionary=True)
-        cur.execute("SELECT * FROM chair WHERE id = %s AND stock > 0 FOR UPDATE", (chair_id,))
-        chair = cur.fetchone()
-        if chair is None:
+        # cur.execute("SELECT * FROM chair WHERE id = %s AND stock > 0 FOR UPDATE", (chair_id,))
+        cur.execute("UPDATE chair SET stock = stock - 1 WHERE id = %s AND stock > 0", (chair_id,))
+        if cur.rowcount <= 0:
             raise NotFound()
-        cur.execute("UPDATE chair SET stock = stock - 1 WHERE id = %s", (chair_id,))
         cnx.commit()
         return {"ok": True}
     except Exception as e:
@@ -446,10 +444,17 @@ def post_estate_nazotte():
 
 @app.route("/api/estate/<int:estate_id>", methods=["GET"])
 def get_estate(estate_id):
-    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
-    if estate is None:
-        raise NotFound()
-    return camelize(estate)
+    rows = r.get('estate_item_' + str(estate_id))
+    if rows is None:
+        rows = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
+        if rows is None:
+            raise NotFound()
+        else:
+            r.set('estate_item_' + str(estate_id), json.dumps(rows))
+    else:
+        rows = json.loads(rows)
+
+    return camelize(rows)
 
 
 @app.route("/api/recommended_estate/<int:chair_id>", methods=["GET"])
