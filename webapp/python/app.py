@@ -56,6 +56,8 @@ cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env
 IS_LOCAL_DEV = False
 DEBUG_MYLOG = False
 
+MEMORY_ESTATE = None
+
 def select_all(query, *args, dictionary=True):
     # print(args[0])
     if IS_LOCAL_DEV:
@@ -141,6 +143,10 @@ def post_initialize():
 
 @app.route("/api/estate/low_priced", methods=["GET"])
 def get_estate_low_priced():
+    global MEMORY_ESTATE
+    if MEMORY_ESTATE is not None:
+        return {"estates": camelize(MEMORY_ESTATE)}
+
     rows = r.get('estate_low_priced')
     if rows is None:
         rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
@@ -151,6 +157,7 @@ def get_estate_low_priced():
         rows = json.loads(rows)
     # rows = camelize(select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,)))
 
+    MEMORY_ESTATE = rows
     return {"estates": camelize(rows)}
 
 
@@ -528,7 +535,9 @@ def post_chair():
 
 @app.route("/api/estate", methods=["POST"])
 def post_estate():
+    global MEMORY_ESTATE
     r.delete('estate_low_priced')
+    MEMORY_ESTATE = None
 
     if "estates" not in flask.request.files:
         raise BadRequest()
