@@ -9,10 +9,10 @@ import mysql.connector
 from sqlalchemy.pool import QueuePool
 from humps import camelize
 
-import json
-import redis
+from redis import BlockingConnectionPool
+from redis.client import Redis
 # r = redis.Redis(host='localhost', port=6379, decode_responses=True, db=0)
-r = redis.Redis(unix_socket_path='/var/run/redis/redis-server.sock', decode_responses=True, db=0)
+kvs = Redis(unix_socket_path='/var/run/redis/redis-server.sock', connection_pool=BlockingConnectionPool(max_connections=30))
 
 LIMIT = 20
 NAZOTTE_LIMIT = 50
@@ -21,6 +21,7 @@ chair_search_condition = json.load(open("../fixture/chair_condition.json", "r"))
 estate_search_condition = json.load(open("../fixture/estate_condition.json", "r"))
 
 app = flask.Flask(__name__)
+
 import logging
 app.logger.setLevel(logging.INFO)
 
@@ -114,7 +115,7 @@ def select_row2(*args, **kwargs):
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
     global MEMORY_ESTATE_LOW
-    r.flushall()
+    kvs.flushall()
     MEMORY_ESTATE_LOW = None
 
     sql_dir = "../mysql/db"
@@ -149,11 +150,11 @@ def get_estate_low_priced():
     if MEMORY_ESTATE_LOW:
         return {"estates": camelize(MEMORY_ESTATE_LOW)}
 
-    rows = r.get('estate_low_priced')
+    rows = kvs.get('estate_low_priced')
     if rows is None:
         rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
         # app.logger.info("UnHit EstateLowPriced")
-        r.set('estate_low_priced', json.dumps(rows))
+        kvs.set('estate_low_priced', json.dumps(rows))
     else:
         # app.logger.info("Hit EstateLowPriced")
         rows = json.loads(rows)
@@ -165,11 +166,11 @@ def get_estate_low_priced():
 
 @app.route("/api/chair/low_priced", methods=["GET"])
 def get_chair_low_priced():
-    rows = r.get('chair_low_priced')
+    rows = kvs.get('chair_low_priced')
     if rows is None:
         rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
         # app.logger.info("UnHit ChairLowPriced")
-        r.set('chair_low_priced', json.dumps(rows))
+        kvs.set('chair_low_priced', json.dumps(rows))
     else:
         # app.logger.info("Hit ChairLowPriced")
         rows = json.loads(rows)
@@ -469,13 +470,13 @@ def get_estate(estate_id):
         if len(rows) > 0:
             return camelize(rows[0])
 
-    rows = r.get('estate_item_' + str(estate_id))
+    rows = kvs.get('estate_item_' + str(estate_id))
     if rows is None:
         rows = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
         if rows is None:
             raise NotFound()
         else:
-            r.set('estate_item_' + str(estate_id), json.dumps(rows))
+            kvs.set('estate_item_' + str(estate_id), json.dumps(rows))
     else:
         rows = json.loads(rows)
 
@@ -515,7 +516,7 @@ def get_recommended_estate(chair_id):
 
 @app.route("/api/chair", methods=["POST"])
 def post_chair():
-    r.delete('chair_low_priced')
+    kvs.delete('chair_low_priced')
 
     if "chairs" not in flask.request.files:
         raise BadRequest()
@@ -543,7 +544,7 @@ def post_chair():
 
 @app.route("/api/estate", methods=["POST"])
 def post_estate():
-    r.delete('estate_low_priced')
+    kvs.delete('estate_low_priced')
 
     if "estates" not in flask.request.files:
         raise BadRequest()
