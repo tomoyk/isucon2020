@@ -27,10 +27,14 @@ After=syslog.target
 WorkingDirectory=/home/isucon/isucon2020/webapp/python
 EnvironmentFile=/home/isucon/env.sh
 PIDFile=/home/isucon/isuumo/webapp/python/server.pid
+LimitNOFILE=65535
 
 User=isucon
 Group=isucon
-ExecStart=/home/isucon/local/python/bin/newrelic-admin run-program /home/isucon/local/python/bin/uwsgi -w app:app --master --processes 16 --pidfile /home/isucon/isuumo/webapp/python/server.pid --socket /tmp/uwsgi.sock --chmod-socket=666 --enable-threads --disable-logging --single-interpreter
+# ExecStart=/home/isucon/local/python/bin/newrelic-admin run-program 
+ExecStart=/home/isucon/local/python/bin/uwsgi -w app:app --master --processes 48 --pidfile /home/isucon/isuumo/webapp/python/server.pid --socket /tmp/uwsgi.sock --chmod-socket=666 --enable-threads --single-interpreter --disable-logging
+# --logto /tmp/isuumo.log
+# --disable-logging
 ExecStop=/bin/bash -c "kill -QUIT $(cat /home/isucon/isuumo/webapp/python/server.pid)"
 Environment=NEW_RELIC_CONFIG_FILE=/home/isucon/newrelic.ini
 
