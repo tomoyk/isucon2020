@@ -56,7 +56,7 @@ cnxpool_chair = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env
 IS_LOCAL_DEV = False
 DEBUG_MYLOG = False
 
-MEMORY_ESTATE = None
+MEMORY_ESTATE_LOW = None
 
 def select_all(query, *args, dictionary=True):
     # print(args[0])
@@ -113,7 +113,9 @@ def select_row2(*args, **kwargs):
 
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
+    global MEMORY_ESTATE_LOW
     r.flushall()
+    MEMORY_ESTATE_LOW = None
 
     sql_dir = "../mysql/db"
     sql_files = [
@@ -143,9 +145,9 @@ def post_initialize():
 
 @app.route("/api/estate/low_priced", methods=["GET"])
 def get_estate_low_priced():
-    global MEMORY_ESTATE
-    if MEMORY_ESTATE is not None:
-        return {"estates": camelize(MEMORY_ESTATE)}
+    global MEMORY_ESTATE_LOW
+    if MEMORY_ESTATE_LOW:
+        return {"estates": camelize(MEMORY_ESTATE_LOW)}
 
     rows = r.get('estate_low_priced')
     if rows is None:
@@ -157,7 +159,7 @@ def get_estate_low_priced():
         rows = json.loads(rows)
     # rows = camelize(select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,)))
 
-    MEMORY_ESTATE = rows
+    MEMORY_ESTATE_LOW = rows
     return {"estates": camelize(rows)}
 
 
@@ -461,6 +463,12 @@ def post_estate_nazotte():
 
 @app.route("/api/estate/<int:estate_id>", methods=["GET"])
 def get_estate(estate_id):
+    if MEMORY_ESTATE_LOW is not None:
+        rows = list(filter(lambda x: x["id"] == estate_id, MEMORY_ESTATE_LOW))
+        # app.logger.info(rows)
+        if len(rows) > 0:
+            return camelize(rows[0])
+
     rows = r.get('estate_item_' + str(estate_id))
     if rows is None:
         rows = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
@@ -535,9 +543,7 @@ def post_chair():
 
 @app.route("/api/estate", methods=["POST"])
 def post_estate():
-    global MEMORY_ESTATE
     r.delete('estate_low_priced')
-    MEMORY_ESTATE = None
 
     if "estates" not in flask.request.files:
         raise BadRequest()
