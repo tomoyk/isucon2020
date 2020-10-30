@@ -11,7 +11,8 @@ from humps import camelize
 
 import json
 import redis
-r = redis.Redis(host='localhost', port=6379, decode_responses=True, db=0)
+# r = redis.Redis(host='localhost', port=6379, decode_responses=True, db=0)
+r = redis.Redis(unix_socket_path='/var/run/redis/redis-server.sock', decode_responses=True, db=0)
 
 LIMIT = 20
 NAZOTTE_LIMIT = 50
