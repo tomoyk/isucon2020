@@ -304,11 +304,11 @@ def post_chair_buy(chair_id):
     try:
         cnx.start_transaction()
         cur = cnx.cursor(dictionary=True)
-        # cur.execute("SELECT * FROM chair WHERE id = %s AND stock > 0 FOR UPDATE", (chair_id,))
         cur.execute("UPDATE chair SET stock = stock - 1 WHERE id = %s AND stock > 0", (chair_id,))
         if cur.rowcount <= 0:
             raise NotFound()
         cnx.commit()
+        # kvs.delete('chair_low_priced')
         return {"ok": True}
     except Exception as e:
         cnx.rollback()
