@@ -21,6 +21,8 @@ chair_search_condition = json.load(open("../fixture/chair_condition.json", "r"))
 estate_search_condition = json.load(open("../fixture/estate_condition.json", "r"))
 
 app = flask.Flask(__name__)
+import logging
+app.logger.setLevel(logging.INFO)
 
 mysql_connection_env = {
     "host": getenv("MYSQL_HOST", "127.0.0.1"),
@@ -142,8 +144,10 @@ def get_estate_low_priced():
     rows = r.get('estate_low_priced')
     if rows is None:
         rows = select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,))
+        # app.logger.info("UnHit EstateLowPriced")
         r.set('estate_low_priced', json.dumps(rows))
     else:
+        # app.logger.info("Hit EstateLowPriced")
         rows = json.loads(rows)
     # rows = camelize(select_all("SELECT * FROM estate ORDER BY rent, id LIMIT %s", (LIMIT,)))
 
@@ -155,10 +159,13 @@ def get_chair_low_priced():
     rows = r.get('chair_low_priced')
     if rows is None:
         rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
+        # app.logger.info("UnHit ChairLowPriced")
         r.set('chair_low_priced', json.dumps(rows))
     else:
+        # app.logger.info("Hit ChairLowPriced")
         rows = json.loads(rows)
     # rows = select_all("SELECT * FROM chair WHERE stock > 0 ORDER BY price, id LIMIT %s", (LIMIT,))
+
     return {"chairs": camelize(rows)}
 
 
@@ -396,6 +403,8 @@ def post_estate_req_doc(estate_id):
 def post_estate_nazotte():
     if "coordinates" not in flask.request.json:
         raise BadRequest()
+    # app.logger.info("MY_DEBUG")
+    # app.logger.info(flask.request.json)
     coordinates = flask.request.json["coordinates"]
     if len(coordinates) == 0:
         raise BadRequest()
