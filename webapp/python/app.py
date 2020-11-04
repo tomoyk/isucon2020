@@ -489,6 +489,7 @@ def get_recommended_estate(chair_id):
     if chair is None:
         raise BadRequest(f"Invalid format searchRecommendedEstateWithChair id : {chair_id}")
     w, h, d = chair["width"], chair["height"], chair["depth"]
+    min1, min2 = sorted((w,h,d))[0:2]
     '''
     query = (
         "SELECT * FROM estate"
@@ -504,13 +505,11 @@ def get_recommended_estate(chair_id):
     '''
     query = (
         "SELECT * FROM estate"
-        " WHERE (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
-        "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
-        "    OR (door_width >= %s AND (door_height >= %s OR door_height >= %s))"
+        " WHERE (door_width >= %s AND door_height >= %s) OR (door_width >= %s AND door_height >= %s)"
         " ORDER BY popularity_desc, id ASC"
         " LIMIT %s"
     )
-    estates = select_all(query, (w, h, d, h, w, d, d, w, h, LIMIT))
+    estates = select_all(query, (min1, min2, min2, min1, LIMIT))
     return {"estates": camelize(estates)}
 
 
