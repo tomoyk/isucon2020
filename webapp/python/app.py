@@ -403,14 +403,21 @@ def get_estate_search_condition():
 
 @app.route("/api/estate/req_doc/<int:estate_id>", methods=["POST"])
 def post_estate_req_doc(estate_id):
-    estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
-    if estate is None:
-        raise NotFound()
+    rows = kvs.get('estate_item_' + str(estate_id))
+    if rows is None:
+        rows = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
+        if rows is None:
+            raise NotFound()
+        else:
+            kvs.set('estate_item_' + str(estate_id), json.dumps(rows))
+    # estate = select_row2("SELECT * FROM estate WHERE id = %s", (estate_id,))
     return {"ok": True}
 
 
 @app.route("/api/estate/nazotte", methods=["POST"])
 def post_estate_nazotte():
+    from shapely.geometry import Point, Polygon
+
     if "coordinates" not in flask.request.json:
         raise BadRequest()
     # app.logger.info("MY_DEBUG")
@@ -420,6 +427,8 @@ def post_estate_nazotte():
         raise BadRequest()
     longitudes = [c["longitude"] for c in coordinates]
     latitudes = [c["latitude"] for c in coordinates]
+    my_points = Polygon([ (c["latitude"], c["longitude"]) for c in coordinates])
+
     bounding_box = {
         "top_left_corner": {"longitude": min(longitudes), "latitude": min(latitudes)},
         "bottom_right_corner": {"longitude": max(longitudes), "latitude": max(latitudes)},
@@ -456,6 +465,12 @@ def post_estate_nazotte():
         estates = cur.fetchall()
     finally:
         cnx.close()
+
+    # results = {"estates": []}
+    # for estate in estates:
+    #     my_p = Point(estate["latitude"], estate["longitude"])
+    #     if my_p.within(my_points):
+    #         results["estates"].append(camelize(estate))
 
     results = {"estates": [camelize(estate) for estate in estates]}
     results["count"] = len(results["estates"])
